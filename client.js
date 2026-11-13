@@ -4,6 +4,11 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const h = React.createElement
 
+    let primitives = {}
+    try { primitives = require('@deepseek-ai/dsh-client-ui-primitives') || {} } catch (error) { primitives = {} }
+    const Menu = primitives.Menu
+    const IconChevronDownOutlineRegular = primitives.IconChevronDownOutlineRegular
+
     const FOLD_OPTIONS = [
       { value: 'always', label: '折叠' },
       { value: 'on-complete', label: '思考完成折叠' },
@@ -14,25 +19,70 @@ window.__ModuleLoader__.load({
       { value: 'zh', label: '简体中文' },
     ]
 
-    const sectionStyle = { display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 0' }
-    const titleStyle = { fontSize: 13, fontWeight: 600 }
-    const rowStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }
-    const labelStyle = { fontSize: 12, opacity: 0.85 }
-    const selectStyle = {
-      minWidth: 140, padding: '4px 8px', fontSize: 12, borderRadius: 6,
-      border: '1px solid rgba(127,127,127,0.35)', background: 'transparent', color: 'inherit',
+    const styles = {
+      row: {
+        display: 'flex', alignItems: 'center', gap: 8, padding: '16px 0',
+        borderBottom: '0.5px solid var(--dsw-alias-border-l2, rgba(127,127,127,0.25))',
+        cursor: 'pointer', userSelect: 'none',
+      },
+      headerText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, paddingRight: 48 },
+      title: { fontSize: 14, fontWeight: 400, lineHeight: '22px', color: 'var(--dsw-alias-label-primary, inherit)' },
+      description: { fontSize: 12, fontWeight: 400, lineHeight: '18px', color: 'var(--dsw-alias-label-tertiary, rgba(127,127,127,0.9))' },
+      summary: { display: 'inline-flex', alignItems: 'center', gap: 8, flex: '0 0 auto', fontSize: 13, color: 'var(--dsw-alias-label-tertiary, rgba(127,127,127,0.9))' },
+      chevron: { transition: 'transform 150ms ease' },
+      body: { display: 'flex', flexDirection: 'column', paddingBottom: 8 },
+      line: { display: 'flex', alignItems: 'center', gap: 24, padding: '12px 0' },
+      lineText: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 },
+      lineTitle: { fontSize: 13, lineHeight: '20px', color: 'var(--dsw-alias-label-primary, inherit)' },
+      lineDesc: { fontSize: 12, lineHeight: '18px', color: 'var(--dsw-alias-label-tertiary, rgba(127,127,127,0.9))' },
+      selector: {
+        display: 'inline-flex', alignItems: 'center', gap: 12, height: 36, padding: '0 14px',
+        border: 'none', borderRadius: 'var(--dsw-radius-md, 8px)',
+        background: 'var(--dsw-alias-bg-module-platform, rgba(127,127,127,0.12))',
+        font: 'inherit', fontSize: 14, lineHeight: '22px',
+        color: 'var(--dsw-alias-label-primary, inherit)', cursor: 'pointer',
+      },
+      nativeSelect: {
+        height: 36, padding: '0 10px', borderRadius: 'var(--dsw-radius-md, 8px)',
+        border: '0.5px solid var(--dsw-alias-border-l2, rgba(127,127,127,0.35))',
+        background: 'var(--dsw-alias-bg-module-platform, transparent)', color: 'inherit', font: 'inherit',
+      },
     }
 
-    function SettingRow({ label, value, options, disabled, onChange }) {
-      return h('div', { style: rowStyle },
-        h('span', { style: labelStyle }, label),
-        h('select', {
-          style: selectStyle,
-          value,
-          disabled,
-          onChange: (event) => onChange(event.target.value),
-          'aria-label': label,
-        }, options.map((option) => h('option', { key: option.value, value: option.value }, option.label))),
+    function SelectLine({ label, description, value, options, disabled, onSelect }) {
+      const [open, setOpen] = React.useState(false)
+      const current = options.find((option) => option.value === value) || options[0]
+      const trigger = h('button', {
+        type: 'button', style: styles.selector, disabled,
+        'aria-haspopup': Menu ? 'menu' : undefined,
+        'aria-expanded': Menu ? open : undefined,
+        'aria-label': label,
+        onClick: (event) => {
+          event.stopPropagation()
+          if (!Menu) return
+          setOpen((previous) => !previous)
+        },
+      }, current.label, IconChevronDownOutlineRegular
+        ? h(IconChevronDownOutlineRegular, { style: { flex: 'none' } })
+        : null)
+
+      return h('div', { style: styles.line },
+        h('div', { style: styles.lineText },
+          h('div', { style: styles.lineTitle }, label),
+          description ? h('div', { style: styles.lineDesc }, description) : null,
+        ),
+        Menu
+          ? h(Menu, {
+            open, onClose: () => setOpen(false), portal: true, align: 'end', selectedId: current.value,
+            items: options.map((option) => ({ id: option.value, label: option.label })),
+            onSelect: (id) => { setOpen(false); onSelect(id) },
+            anchor: trigger,
+          })
+          : h('select', {
+            style: styles.nativeSelect, value, disabled, 'aria-label': label,
+            onChange: (event) => onSelect(event.target.value),
+            onClick: (event) => event.stopPropagation(),
+          }, options.map((option) => h('option', { key: option.value, value: option.value }, option.label))),
       )
     }
 
@@ -41,22 +91,47 @@ window.__ModuleLoader__.load({
       const config = (snapshot && snapshot.value) || {}
       const language = config.language === 'zh' ? 'zh' : 'en'
       const fold = config.fold === 'on-complete' || config.fold === 'never' ? config.fold : 'always'
+      const [open, setOpen] = React.useState(false)
       const [busy, setBusy] = React.useState(false)
       const set = (field, next) => {
         if (busy) return
         setBusy(true)
         Promise.resolve(props.setField(field, next)).catch(() => {}).then(() => setBusy(false))
       }
-      return h('div', { style: sectionStyle },
-        h('div', { style: titleStyle }, '思考设置'),
-        h(SettingRow, {
-          label: '思考折叠', value: fold, options: FOLD_OPTIONS, disabled: busy,
-          onChange: (next) => set('fold', next),
-        }),
-        h(SettingRow, {
-          label: '思考语言', value: language, options: LANGUAGE_OPTIONS, disabled: busy,
-          onChange: (next) => set('language', next),
-        }),
+      const foldLabel = (FOLD_OPTIONS.find((option) => option.value === fold) || FOLD_OPTIONS[0]).label
+      const languageLabel = (LANGUAGE_OPTIONS.find((option) => option.value === language) || LANGUAGE_OPTIONS[1]).label
+      return h('div', null,
+        h('div', {
+          style: styles.row, role: 'button', tabIndex: 0,
+          'aria-expanded': open,
+          onClick: () => setOpen((previous) => !previous),
+          onKeyDown: (event) => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setOpen((previous) => !previous) }
+          },
+        },
+          h('div', { style: styles.headerText },
+            h('div', { style: styles.title }, '思考设置'),
+            h('div', { style: styles.description }, '推理的展开方式与语言；回复语言仍跟随提问。'),
+          ),
+          h('span', { style: styles.summary }, languageLabel + ' · ' + foldLabel,
+            IconChevronDownOutlineRegular ? h(IconChevronDownOutlineRegular, {
+              style: { ...styles.chevron, transform: open ? 'rotate(180deg)' : 'none' },
+            }) : null),
+        ),
+        open ? h('div', { style: styles.body },
+          h(SelectLine, {
+            label: '思考折叠',
+            description: '折叠：保持收起，点开才看；思考完成折叠：边想边展开，这段思考结束就收起；不折叠：始终展开。',
+            value: fold, options: FOLD_OPTIONS, disabled: busy,
+            onSelect: (next) => set('fold', next),
+          }),
+          h(SelectLine, {
+            label: '思考语言',
+            description: '模型内部推理使用的语言。代码、标识符、路径、命令保持原文，不翻译。',
+            value: language, options: LANGUAGE_OPTIONS, disabled: busy,
+            onSelect: (next) => set('language', next),
+          }),
+        ) : null,
       )
     }
 
@@ -73,13 +148,11 @@ window.__ModuleLoader__.load({
       }
       return state
     }
-
     function trigger(row) {
       return row.querySelector('[aria-expanded]') || row.querySelector('button, [role="button"]')
     }
     function isRunning(row) { return row.getAttribute('data-state') === 'running' }
     function isOpen(row) { return row.hasAttribute('data-expanded') }
-
     function hasResponseAfter(row) {
       const wrap = row.parentElement
       if (!wrap) return false
@@ -91,14 +164,12 @@ window.__ModuleLoader__.load({
       }
       return false
     }
-
     function click(row) {
       const element = trigger(row)
       if (!element) return false
       try { element.click() } catch (error) { return false }
       return true
     }
-
     function sync() {
       const list = document.querySelectorAll('[data-variant="think"]')
       for (const row of list) {
@@ -106,10 +177,7 @@ window.__ModuleLoader__.load({
         const running = isRunning(row)
         const open = isOpen(row)
         if (open) state.wasOpen = true
-        if (!open && state.auto && state.wasOpen) {
-          state.userClosed = true
-          state.auto = false
-        }
+        if (!open && state.auto && state.wasOpen) { state.userClosed = true; state.auto = false }
         if (currentFold === 'always') {
           if (open && state.auto) { if (click(row)) state.auto = false }
           continue
@@ -118,7 +186,6 @@ window.__ModuleLoader__.load({
           if (!open && !state.userClosed) { if (click(row)) { state.auto = true; state.tries += 1 } }
           continue
         }
-        // on-complete: open while streaming, close when the thought finishes
         if (running && !open && !state.auto && !state.userClosed && state.tries < 3) {
           if (click(row)) { state.auto = true; state.tries += 1 }
         } else if (open && state.auto && (!running || hasResponseAfter(row))) {
@@ -128,12 +195,10 @@ window.__ModuleLoader__.load({
         }
       }
     }
-
     function schedule() {
       if (timer) return
       timer = setTimeout(() => { timer = 0; sync() }, 80)
     }
-
     function setMode(mode) {
       if (mode === currentFold) return
       currentFold = mode
@@ -142,7 +207,6 @@ window.__ModuleLoader__.load({
       }
       schedule()
     }
-
     function startEngine(ctx) {
       const observer = new MutationObserver(schedule)
       try {

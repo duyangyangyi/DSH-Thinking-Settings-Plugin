@@ -1,6 +1,6 @@
 # DSH Thinking Settings
 
-给 DeepSeek Harness 的通用设置加一个「思考设置」，两个并列的下拉：
+给 DeepSeek Harness 的通用设置加一个可折叠的「思考设置」，展开后是两个并列的下拉（与通用设置其他项一致的下拉样式）：
 
 | 设置 | 取值 | 说明 |
 | --- | --- | --- |

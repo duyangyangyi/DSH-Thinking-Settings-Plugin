@@ -1,6 +1,6 @@
 {
   "name": "dsh-thinking-language",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "Lock the model's reasoning language (English or Simplified Chinese) from General Settings; replies follow the user's language.",
