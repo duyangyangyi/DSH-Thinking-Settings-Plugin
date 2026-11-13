@@ -24,7 +24,7 @@
 在 DSH 里：**设置 → 插件 → 安装**，填本地目录或仓库地址；或命令行：
 
 ```bash
-dsh plugin --profile desktop add /path/to/dsh-thinking-language
+dsh plugin --profile desktop add /path/to/dsh-thinking-settings
 ```
 
 从 GitHub 安装可以用 tarball 直链：
