@@ -54,7 +54,7 @@ function reminderMessage(text) {
     id: randomUUID(),
     role: 'user',
     content: [{ type: 'text', text }],
-    source: { kind: 'plugin', plugin: 'dsh-thinking-language' },
+    source: { kind: 'thinking-language' },
   }
 }
 
