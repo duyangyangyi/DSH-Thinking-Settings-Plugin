@@ -30,7 +30,7 @@ dsh plugin --profile desktop add /path/to/dsh-thinking-language
 从 GitHub 安装可以用 tarball 直链：
 
 ```bash
-dsh plugin --profile desktop add https://codeload.github.com/duyangyangyi/DSH-Thinking-Language-Plugin/tar.gz/refs/heads/main
+dsh plugin --profile desktop add https://codeload.github.com/duyangyangyi/DSH-Thinking-Settings-Plugin/tar.gz/refs/heads/main
 ```
 
 装完刷新一次页面（客户端设置项与折叠引擎在页面加载时注册）。

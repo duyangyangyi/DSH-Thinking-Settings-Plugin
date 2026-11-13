@@ -38,5 +38,10 @@
     "@deepseek-ai/schemastery": {
       "optional": true
     }
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/duyangyangyi/DSH-Thinking-Settings-Plugin.git"
+  },
+  "homepage": "https://github.com/duyangyangyi/DSH-Thinking-Settings-Plugin"
 }
