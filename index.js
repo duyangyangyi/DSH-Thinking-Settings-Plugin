@@ -11,26 +11,27 @@ export const Config = z.object({
 })
 
 const ENGLISH = [
-  '## Reasoning language',
+  '## Reasoning language (mandatory)',
   '',
-  'Think and reason in English. This applies to your internal reasoning regardless of the language the user writes in.',
+  'You must reason in English. This is a mandatory requirement, not a preference.',
+  'Do not reason in any other language. If the context is Chinese, or if you already started reasoning in another language, switch to English immediately.',
   'Write the visible reply in the language of the user\'s latest message.',
   'Keep code, identifiers, file paths, commands, configuration keys, and API names exactly as written; never translate them.',
-  'This setting supersedes any earlier instruction about the language of your reasoning.',
+  'This rule overrides any earlier instruction that conflicts with it.',
 ].join('\n')
 
 const CHINESE = [
-  '## 思考语言',
+  '## 思考语言（强制）',
   '',
-  '内部推理（reasoning）一律使用简体中文，无论用户使用什么语言书写。',
-  '即使上下文里大量出现英文、即使你前几段用英文推理过，也要立即切换成简体中文继续推理。',
+  '你必须使用简体中文进行内部推理。这是强制要求，不是偏好。',
+  '禁止用英文或其他语言推理。即使上下文是英文、即使你已经开始用英文推理，也必须立刻改用简体中文。',
   '可见回复的语言跟随用户最新一条消息的语言。',
   '代码、标识符、文件路径、命令、配置键、API 名称保持原文，不要翻译。',
-  '本设置优先于此前任何关于思考语言的指令。',
+  '此规则优先于任何更早的、与之冲突的指令。',
 ].join('\n')
 
-const REMINDER_EN = '(system reminder) Reason in English for this turn.'
-const REMINDER_ZH = '（系统提醒）这一轮请用简体中文思考。'
+const REMINDER_EN = '(system directive) You must reason in English. Do not reason in any other language.'
+const REMINDER_ZH = '（系统指令）必须用简体中文推理。禁止用英文推理。'
 
 function pick(value) {
   return value === 'zh' ? 'zh' : value === 'en' ? 'en' : null
@@ -49,12 +50,12 @@ function liveLanguage(ctx, config) {
   return pick(config && config.language) || 'en'
 }
 
-function reminderMessage(text) {
+function reminderMessage(text, summary) {
   return {
     id: randomUUID(),
     role: 'user',
     content: [{ type: 'text', text }],
-    source: { kind: 'thinking-language' },
+    source: { kind: 'thinking-language', form: 'notice', summary },
   }
 }
 
@@ -69,12 +70,18 @@ export function apply(ctx, config) {
     }))
   })
 
-  // A system-prompt section alone is easy to drift away from mid-conversation, so
-  // put a short reminder next to the user's message at the start of each turn.
+  // One reminder per turn: a per-step reminder was verified ineffective and cost
+  // tokens quadratically in the number of tool steps.
   ctx.on('agent/pre-step', async (payload, next) => {
     const decision = await next()
     if (!decision || decision.kind !== 'enter' || payload.step !== 1) return decision
-    const text = liveLanguage(ctx, config) === 'zh' ? REMINDER_ZH : REMINDER_EN
-    return { ...decision, messages: [...decision.messages, reminderMessage(text)] }
+    const chinese = liveLanguage(ctx, config) === 'zh'
+    return {
+      ...decision,
+      messages: [...decision.messages, reminderMessage(
+        chinese ? REMINDER_ZH : REMINDER_EN,
+        chinese ? '思考语言：简体中文' : 'Reasoning language: English',
+      )],
+    }
   })
 }

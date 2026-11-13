@@ -23,6 +23,7 @@ dsh plugin --profile desktop add https://codeload.github.com/duyangyangyi/DSH-Ti
 ## 它怎么工作
 
 - **Host 端**（`index.js`）向 `systemPrompt` 注册一个 section，文本函数每次组装提示时读取当前档位，因此切换后 **下一轮请求** 即生效，无需重启。
+- 每轮第一步额外注入一条 `notice` 形式的强制提醒（每轮一条，不是每步一条）。
 - **Client 端**（`client.js`）在通用设置的 `settings.general.item` 插槽注册一行「思考语言」，读写 `thinking-language` 配置项的 `language` 字段（`en` / `zh`）。
 - 配置写入 profile 的配置文档，属于 DSH 的 settings 表单（volatile 字段）。
 
