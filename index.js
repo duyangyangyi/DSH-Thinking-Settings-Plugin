@@ -8,6 +8,9 @@ export const Config = z.object({
   // plugin; the applied Config holds a live reference, so the resolved string is
   // read from the settings descriptor instead of the raw object.
   language: z.string().default('en').volatile(),
+  // Reasoning-row folding: always (host default), on-complete (expand while
+  // streaming, collapse when the thought finishes), never (keep it open).
+  fold: z.string().default('always').volatile(),
 })
 
 const ENGLISH = [
